@@ -1,20 +1,29 @@
-import os
+# app.py
+import streamlit as st
 from openai import OpenAI
-from dotenv import load_dotenv
+import os
 
-# 환경 변수에서 키 불러오기 (.env에 OPENAI_API_KEY 저장된 경우)
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
+# API 키 불러오기
+api_key = st.secrets.get("OPENAI_API_KEY", "")  # 또는 os.getenv("OPENAI_API_KEY")
 
 if not api_key:
-    print("❌ API 키가 없습니다. .env 파일 또는 환경변수를 확인하세요.")
-    exit()
+    st.error("OpenAI API 키가 설정되지 않았습니다.")
+    st.stop()
 
-try:
-    client = OpenAI(api_key=api_key)
-    models = client.models.list()  # 모델 목록 요청
-    print("✅ API 키가 유효합니다!")
-    print("사용 가능한 모델 예시:", [model.id for model in models.data[:3]])
-except Exception as e:
-    print("❌ API 키가 유효하지 않거나 인증에 실패했습니다.")
-    print("에러 메시지:", e)
+client = OpenAI(api_key=api_key)
+
+st.title("나만의 GPT 앱 ✨")
+user_input = st.text_area("무엇이든 물어보세요:")
+
+if st.button("응답 받기") and user_input:
+    with st.spinner("GPT 응답 생성 중..."):
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": user_input}],
+                temperature=0.7
+            )
+            st.success("답변:")
+            st.write(response.choices[0].message.content)
+        except Exception as e:
+            st.error(f"에러 발생: {e}")
